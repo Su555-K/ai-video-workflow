@@ -178,7 +178,7 @@ def main():
 
     print('-' * 88)
     print(f'合计 {total_dur:.1f}s ｜ 音节 {total_syl} ｜ 需要 {total_need:.2f}s ｜ 差 {total_dur-total_need:+.2f}s')
-    print(f'全片实际语速 {total_syl/total_dur:.2f} 字/秒（基准 {args.pace}）')
+    print(f'全片实际语速 {total_syl/total_dur:.2f} 音节/秒（按音节计，与 {args.pace} 字/秒的基准不是同一口径，仅作参考）')
 
     total = args.total or total_dur
     limit = total * 0.9
