@@ -1,4 +1,4 @@
-<!-- 来源：~/.workbuddy/skills/client-brief/references/capture-sop.md，版本 2026-11-02，与 skill 内文件哈希一致 -->
+<!-- 来源：client-brief skill 的 references/capture-sop.md，版本 2026-11-02 -->
 
 # 采集 SOP · 数字人、声音克隆、实景、屏幕
 
