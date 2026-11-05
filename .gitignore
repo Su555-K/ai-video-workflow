@@ -2,3 +2,7 @@
 脱敏映射表*
 *映射表*
 .DS_Store
+
+# Python 运行产物
+__pycache__/
+*.pyc
