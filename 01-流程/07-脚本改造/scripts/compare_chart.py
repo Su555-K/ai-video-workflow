@@ -64,6 +64,13 @@ def load_pillow():
     return Image, ImageDraw, ImageFont
 
 
+# --help 不依赖 Pillow：Pillow 坏了也能看到用法
+if __name__ == "__main__" and any(a in ("-h", "--help") for a in sys.argv[1:]):
+    print("用法: python compare_chart.py spec.json out.png")
+    print()
+    print("spec.json 结构见本文件顶部 docstring；依赖 Pillow 与一款中文字体。")
+    raise SystemExit(0)
+
 Image, ImageDraw, ImageFont = load_pillow()
 
 FONT_CANDIDATES = [
