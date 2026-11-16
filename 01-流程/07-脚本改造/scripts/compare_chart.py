@@ -22,6 +22,9 @@ kind 取值: ok(有效但普通) / bad(空转) / amber(证据位) / blue(改后�
 marked 为可选，指定左侧需要竖括号标注的镜头序号（1-based 连续区间）。
 mark_text 建议不超过 12 字；超出会自动缩字号，缩到下限仍放不下则截断加省略号。
 footer.big 与 stats 顺序自动排布，空间不够时图例自动换行。
+
+注意：色块高度 = 时长 × 17.5px，但**不足 26px 的短镜按下限 26px 画**（否则
+0.5–1.5 秒的镜头放不下标签）。也就是说短镜的高度不完全等于时长比例，长镜不受影响。
 """
 import json
 import os
@@ -94,6 +97,7 @@ STYLE = {
 }
 
 SCALE = 17.5      # 每秒像素
+MIN_BLOCK_H = 26  # 短镜渲染高度下限：1s 按比例只有 17.5px，扣掉间隙放不下标签
 PANEL_W = 700
 LEFT_X = 60
 GAP = 100
@@ -155,11 +159,21 @@ def f(bold, size):
     return ImageFont.truetype(BOLD if bold else REGULAR, size)
 
 
+def block_h(dur):
+    """色块高度 = 时长 × SCALE；不足 MIN_BLOCK_H 的按下限画，否则标签放不下。"""
+    return max(dur * SCALE, MIN_BLOCK_H)
+
+
 def panel_height(shots):
-    return sum(s["dur"] for s in shots) * SCALE
+    return sum(block_h(s["dur"]) for s in shots)
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print("用法: python compare_chart.py spec.json out.png")
+        print()
+        print("spec.json 结构见本文件顶部 docstring；依赖 Pillow 与一款中文字体。")
+        return 0
     if len(sys.argv) < 3:
         raise SystemExit("用法: python compare_chart.py spec.json out.png")
 
@@ -189,14 +203,19 @@ def main():
     def draw(x, shots):
         y = TOP
         for s in shots:
-            h = s["dur"] * SCALE
+            h = block_h(s["dur"])
+            usable = h - 6
             fill, stroke, ink = STYLE.get(s.get("kind", "ok"), STYLE["ok"])
-            d.rounded_rectangle([x, y, x + PANEL_W, y + h - 6], radius=9,
+            d.rounded_rectangle([x, y, x + PANEL_W, y + usable], radius=9,
                                 fill=fill, outline=stroke, width=2)
-            d.text((x + 24, y + 14), s["label"], font=f(False, 21), fill=ink)
-            tw = d.textlength(f"{s['dur']}s", font=f(False, 17))
-            d.text((x + PANEL_W - 24 - tw, y + 16), f"{s['dur']}s",
-                   font=f(False, 17), fill=ink)
+            # 短镜的块高被 MIN_BLOCK_H 抬到 26px 后，21px 的字仍会压边，字号随块高收缩。
+            fs = max(11, min(21, int(usable / 1.9)))
+            cy = y + usable / 2
+            d.text((x + 24, cy), s["label"], font=f(False, fs), fill=ink, anchor="lm")
+            fs2 = max(10, fs - 4)
+            tw = d.textlength(f"{s['dur']}s", font=f(False, fs2))
+            d.text((x + PANEL_W - 24 - tw, cy), f"{s['dur']}s",
+                   font=f(False, fs2), fill=ink, anchor="lm")
             y += h
         return y
 
@@ -205,8 +224,8 @@ def main():
 
     marked = left.get("marked")
     if marked and len(marked) >= 2:
-        start = TOP + sum(s["dur"] for s in left["shots"][:marked[0] - 1]) * SCALE
-        end = TOP + sum(s["dur"] for s in left["shots"][:marked[-1]]) * SCALE
+        start = TOP + sum(block_h(s["dur"]) for s in left["shots"][:marked[0] - 1])
+        end = TOP + sum(block_h(s["dur"]) for s in left["shots"][:marked[-1]])
         bx = LEFT_X + PANEL_W + 16
         d.line([(bx, start + 4), (bx, end - 6)], fill="#E24B4A", width=3)
         d.line([(bx, start + 4), (bx + 12, start + 4)], fill="#E24B4A", width=3)
@@ -257,4 +276,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main() or 0)
